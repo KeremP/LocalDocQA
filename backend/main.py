@@ -1,6 +1,7 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, APIRouter, status
 from sqlalchemy.orm import Session
-
+from pydantic import BaseModel
 import crud, models, schemas
 from database import SessionLocal, engine
 
@@ -19,6 +20,8 @@ from completions.llm import (
 )
 
 app = FastAPI()
+
+DEBUG = True
 
 MODEL = load_model("./model/ggml-gpt4all-j-v1.3-groovy.bin")
 
@@ -56,18 +59,22 @@ def healthcheck() ->  Dict[str, str]:
 
 @app.post("/create_index/", status_code=status.HTTP_201_CREATED)
 async def create_index(file: UploadFile):
-    uid, filename = gen_index_from_doc(file)
+    uid, filename = gen_index_from_doc(file, num_pages=10 if DEBUG else None)
     return {
         "uid":uid,
         "filename":filename
     }
 
+class CompletionRequest(BaseModel):
+    query: str
+    uid: str
+
 @app.post("/get_completion/", status_code=status.HTTP_200_OK)
-async def get_completion(query: str, uid: str):
-    index, chunks = load_index_in_memory(uid)
-    context = search_index(chunks, index, query)
+async def get_completion(completionRequest: CompletionRequest):
+    index, chunks = load_index_in_memory(completionRequest.uid)
+    context = search_index(chunks, index, completionRequest.query)
     prompt = build_prompt(
-        context, query
+        context, completionRequest.query
     )
     response = generate(prompt, MODEL)
     return {

@@ -1,10 +1,14 @@
 import json
 import pypdf
 
-from typing import List
+from typing import List, Optional
 
-def load_pdf(file_object):
+def load_pdf(file_object, num_pages: Optional[int] = None):
     pdf = pypdf.PdfReader(file_object)
+    if num_pages is not None:
+        return [
+        page.extract_text() for page in pdf.pages[:num_pages]
+    ]
     return [
         page.extract_text() for page in pdf.pages
     ]
