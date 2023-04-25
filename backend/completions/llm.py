@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer, util
 from pygpt4all.models.gpt4all_j import GPT4All_J
 
 from langchain.text_splitter import CharacterTextSplitter
-from backend.completions.utils import load_pdf, save_json, load_json
+from completions.utils import load_pdf, save_json, load_json
 
 from fastapi import UploadFile
 from typing import List, Union, Tuple

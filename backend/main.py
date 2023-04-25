@@ -1,15 +1,15 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, APIRouter, status
 from sqlalchemy.orm import Session
 
-from backend import crud, models, schemas
-from backend.database import SessionLocal, engine
+import crud, models, schemas
+from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
 from typing import Dict
 
 from pygpt4all.models.gpt4all_j import GPT4All_J
-from backend.completions.llm import (
+from completions.llm import (
     gen_index_from_doc,
     generate,
     load_index_in_memory,
@@ -63,13 +63,13 @@ async def create_index(file: UploadFile):
     }
 
 @app.post("/get_completion/", status_code=status.HTTP_200_OK)
-async def get_completion(query: str, uid: str, model: GPT4All_J = MODEL):
+async def get_completion(query: str, uid: str):
     index, chunks = load_index_in_memory(uid)
     context = search_index(chunks, index, query)
     prompt = build_prompt(
         context, query
     )
-    response = generate(prompt, model)
+    response = generate(prompt, MODEL)
     return {
         "agentResponse":response
     }

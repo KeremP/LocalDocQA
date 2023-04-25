@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from backend import models, schemas
+import models, schemas
 
 def get_document(db: Session, uid: str):
     return db.query(
