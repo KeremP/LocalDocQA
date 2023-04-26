@@ -2,6 +2,7 @@ import os
 import uuid
 from torch import Tensor
 import numpy as np
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from sentence_transformers import SentenceTransformer, util
 from pygpt4all.models.gpt4all_j import GPT4All_J
 
@@ -25,19 +26,32 @@ Question:
 {question}
 ### Response:"""
 
-def load_model(path: str) -> GPT4All_J:
+def load_model(path_or_name: str, remote: bool = False, **kwargs) -> Union[GPT4All_J, Tuple[AutoModelForCausalLM, AutoTokenizer]]:
     """
     Load model into memory.
     """
-    model = GPT4All_J(path)
-    return model
+    if remote:
+        tokenizer = AutoTokenizer.from_pretrained(path_or_name)
+        model = AutoModelForCausalLM.from_pretrained(path_or_name, **kwargs)
+        return model, tokenizer
+    else:
+        model = GPT4All_J(path_or_name)
+        return model
 
 def build_prompt(context: str, query: str) -> str:
     return PROMPT_TEMPLATE.format(context=context, question=query)
 
 # TODO: streaming w/ new_text_callback
-def generate(prompt: str, model: GPT4All_J, max_tokens: int = 100) -> str:
-    output = model.generate(prompt, n_predict=max_tokens)
+def generate(prompt: str, model: Union[GPT4All_J, AutoModelForCausalLM], tokenizer: Optional[AutoTokenizer] = None, max_tokens: int = 100) -> str:
+    if isinstance(model, GPT4All_J):
+        output = model.generate(prompt, n_predict=max_tokens)
+    else:
+        if tokenizer is None:
+            raise Exception("Must pass Tokenizer if using Transformers model")
+        else:
+            inputs = tokenizer(prompt, return_tensors="pt").input_ids
+            outputs = model.generate(inputs, max_new_tokens=max_tokens, do_sample=True, top_p=0.9, temperature=0.9)
+            output = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
     return output
 
 def build_index(chunks: List[str], embedding_func: callable, dims: int = 768) -> np.ndarray:

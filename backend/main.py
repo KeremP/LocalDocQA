@@ -24,6 +24,7 @@ app = FastAPI()
 DEBUG = True
 
 MODEL = load_model("./model/ggml-gpt4all-j-v1.3-groovy.bin")
+# MODEL = load_model("nomic-ai/gpt4all-j", remote=True, revision="v1.3-groovy")
 
 def get_db():
     db = SessionLocal()
